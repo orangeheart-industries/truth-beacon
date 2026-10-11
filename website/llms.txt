@@ -13,9 +13,9 @@ TruthBeacon is a 100% offline, privacy-first desktop security system designed to
 - **Automated Circuit Breaker**: Rate-limits consequential moderation actions to prevent cascading mistakes or runaway bots.
 
 ## Official Downloads & Verification
-- **macOS**: Universal 2 DMG (Apple Silicon & Intel 64-bit) with Apple Notarization and Ed25519 cryptographic signatures.
-- **Windows**: NSIS Installer (x64) and standalone executable signed with Authenticode.
-- **Linux**: AppImage and Debian (.deb) packages with SHA-256 checksums.
+- **macOS**: Universal 2 DMG installer (Apple Silicon & Intel 64-bit) with Apple Notarization and Ed25519 cryptographic signatures.
+- **Windows**: Windows Installer (x64 NSIS setup executable) signed with Authenticode.
+- **Linux**: Linux Universal AppImage with SHA-256 checksums.
 - **Repository**: https://github.com/boredpolymath/truth-beacon
 - **Official Site**: https://boredpolymath.github.io/truth-beacon/
 - **Verification Keys**: SHA256SUMS.txt.asc and GPG-signed manifests available in releases.

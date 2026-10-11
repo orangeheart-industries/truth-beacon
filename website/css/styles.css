@@ -502,6 +502,16 @@ body {
   gap: 24px;
 }
 
+.downloads-grid.filtered-single {
+  display: flex;
+  justify-content: center;
+}
+
+.downloads-grid.filtered-single .download-card {
+  max-width: 440px;
+  width: 100%;
+}
+
 .download-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);

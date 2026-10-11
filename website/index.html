@@ -163,7 +163,7 @@
 
         <div>
           <a href="#downloads" class="hero-other-platforms" id="hero-other-platforms-link">
-            <span>Explore all installers (Windows, Linux, Portable & CLI)</span>
+            <span>Explore all installers (macOS, Windows, and Linux)</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -261,7 +261,7 @@
         <!-- Downloads Grid -->
         <div class="downloads-grid" id="downloads-grid">
 
-          <!-- Card 1: macOS DMG (Recommended) -->
+          <!-- Card 1: macOS Universal Installer (Recommended) -->
           <div class="download-card recommended" data-platform="mac" id="card-mac-dmg">
             <div class="card-header-row">
               <div class="card-icon-wrap">
@@ -292,7 +292,7 @@
             <div class="checksum-box">
               <div class="checksum-content" title="199d97bd6ef59f138eb279655c9ea7b938b48647667003db3a2a4ee8ce7a993a">
                 <span>SHA-256:</span>
-                <span class="checksum-hash">5249bc8c...aeb8c5d20</span>
+                <span class="checksum-hash">199d97bd...ce7a993a</span>
               </div>
               <button type="button" class="btn-copy-checksum"
                 data-hash="199d97bd6ef59f138eb279655c9ea7b938b48647667003db3a2a4ee8ce7a993a"
@@ -305,50 +305,7 @@
             </div>
           </div>
 
-          <!-- Card 2: macOS Portable Zip -->
-          <div class="download-card" data-platform="mac" id="card-mac-zip">
-            <div class="card-header-row">
-              <div class="card-icon-wrap">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.15c.61-.74 1.04-1.79.92-2.85-.92.04-2.02.62-2.67 1.36-.57.65-1.07 1.71-.93 2.73 1.03.08 2.07-.5 2.68-1.24z" />
-                </svg>
-              </div>
-            </div>
-            <div class="card-title-group">
-              <h3>macOS Portable App</h3>
-              <div class="card-arch-tag">Universal 2 • ZIP Archive (~27.9 MB)</div>
-            </div>
-            <p class="card-desc">
-              Standalone zipped <code style="font-size:0.8rem">TruthBeacon.app</code> bundle. Perfect for flash drives
-              or portable testing without mounting a disk image.
-            </p>
-            <a href="https://github.com/boredpolymath/truth-beacon/releases/download/v0.3.2/TruthBeacon_0.3.2_macos_universal.zip"
-              class="card-btn-download" id="btn-download-mac-zip">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Download .ZIP</span>
-            </a>
-            <div class="checksum-box">
-              <div class="checksum-content" title="67d4713af9e7c2b22023e44715d42ac7a7b8dedfdda59af3ddbe32f307fd8499">
-                <span>SHA-256:</span>
-                <span class="checksum-hash">67d4713a...07fd8499</span>
-              </div>
-              <button type="button" class="btn-copy-checksum"
-                data-hash="67d4713af9e7c2b22023e44715d42ac7a7b8dedfdda59af3ddbe32f307fd8499"
-                title="Copy SHA-256 Checksum" id="btn-copy-mac-zip">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 3: Windows Setup EXE (Recommended) -->
+          <!-- Card 2: Windows Setup EXE (Recommended) -->
           <div class="download-card recommended" data-platform="win" id="card-win-exe">
             <div class="card-header-row">
               <div class="card-icon-wrap">
@@ -392,93 +349,7 @@
             </div>
           </div>
 
-          <!-- Card 4: Windows MSI Enterprise -->
-          <div class="download-card" data-platform="win" id="card-win-msi">
-            <div class="card-header-row">
-              <div class="card-icon-wrap">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
-                </svg>
-              </div>
-            </div>
-            <div class="card-title-group">
-              <h3>Windows Enterprise MSI</h3>
-              <div class="card-arch-tag">x64 MSVC • WiX Package (~12 MB)</div>
-            </div>
-            <p class="card-desc">
-              Standard Microsoft Windows Installer package (`.msi`). Built for sysadmins and automated enterprise
-              deployments via GPO or Intune.
-            </p>
-            <a href="https://github.com/boredpolymath/truth-beacon/releases/download/v0.3.2/TruthBeacon_0.3.2_x64_en-US.msi"
-              class="card-btn-download" id="btn-download-win-msi">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Download .MSI</span>
-            </a>
-            <div class="checksum-box">
-              <div class="checksum-content" title="436d9f7be2f5776455e9fe06b111c079c703f184ce56c9bc5ee570ea3e64aaad">
-                <span>SHA-256:</span>
-                <span class="checksum-hash">436d9f7b...3e64aaad</span>
-              </div>
-              <button type="button" class="btn-copy-checksum"
-                data-hash="436d9f7be2f5776455e9fe06b111c079c703f184ce56c9bc5ee570ea3e64aaad"
-                title="Copy SHA-256 Checksum" id="btn-copy-win-msi">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 5: Windows Portable -->
-          <div class="download-card" data-platform="win" id="card-win-portable">
-            <div class="card-header-row">
-              <div class="card-icon-wrap">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
-                </svg>
-              </div>
-            </div>
-            <div class="card-title-group">
-              <h3>Windows Portable EXE</h3>
-              <div class="card-arch-tag">x64 MSVC • Zero Install (~24 MB)</div>
-            </div>
-            <p class="card-desc">
-              Completely standalone executable. Runs instantly without touching the Windows Registry or requiring
-              elevated admin permissions.
-            </p>
-            <a href="https://github.com/boredpolymath/truth-beacon/releases/download/v0.3.2/TruthBeacon-Portable.exe"
-              class="card-btn-download" id="btn-download-win-portable">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Download Portable</span>
-            </a>
-            <div class="checksum-box">
-              <div class="checksum-content" title="03858df78e645d9c3d38ea1ac0c146d86e8aa843f22fcba8678f59d39985a098">
-                <span>SHA-256:</span>
-                <span class="checksum-hash">03858df7...9985a098</span>
-              </div>
-              <button type="button" class="btn-copy-checksum"
-                data-hash="03858df78e645d9c3d38ea1ac0c146d86e8aa843f22fcba8678f59d39985a098"
-                title="Copy SHA-256 Checksum" id="btn-copy-win-portable">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 6: Linux AppImage (Recommended) -->
+          <!-- Card 3: Linux Universal AppImage (Recommended) -->
           <div class="download-card recommended" data-platform="linux" id="card-linux-appimage">
             <div class="card-header-row">
               <div class="card-icon-wrap">
@@ -514,92 +385,6 @@
               <button type="button" class="btn-copy-checksum"
                 data-hash="ec3203b01db76b58b2c55311ea5fdbfeca4c97111cc8207073038c382ca9d3c3"
                 title="Copy SHA-256 Checksum" id="btn-copy-linux-appimage">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 7: Linux Debian .deb -->
-          <div class="download-card" data-platform="linux" id="card-linux-deb">
-            <div class="card-header-row">
-              <div class="card-icon-wrap">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14h-2v-4h2v4zm4 0h-2v-4h2v4zm-2-8a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
-                </svg>
-              </div>
-            </div>
-            <div class="card-title-group">
-              <h3>Debian / Ubuntu Package</h3>
-              <div class="card-arch-tag">x86_64 • DEB Package (~14 MB)</div>
-            </div>
-            <p class="card-desc">
-              Native `.deb` package with FreeDesktop menu integration, XDG icons, and standard apt / dpkg dependency
-              resolution.
-            </p>
-            <a href="https://github.com/boredpolymath/truth-beacon/releases/download/v0.3.2/TruthBeacon_0.3.2_amd64.deb"
-              class="card-btn-download" id="btn-download-linux-deb">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Download .DEB</span>
-            </a>
-            <div class="checksum-box">
-              <div class="checksum-content" title="3173c92fa36016171fa7d1efabeb2b1c67b82e7ad2e490f6426d7bbebbb94136">
-                <span>SHA-256:</span>
-                <span class="checksum-hash">3173c92f...bbb94136</span>
-              </div>
-              <button type="button" class="btn-copy-checksum"
-                data-hash="3173c92fa36016171fa7d1efabeb2b1c67b82e7ad2e490f6426d7bbebbb94136"
-                title="Copy SHA-256 Checksum" id="btn-copy-linux-deb">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 8: macOS Mach-O CLI Fat Binary -->
-          <div class="download-card" data-platform="mac" id="card-mac-bin">
-            <div class="card-header-row">
-              <div class="card-icon-wrap">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="4 17 10 11 4 5" />
-                  <line x1="12" y1="19" x2="20" y2="19" />
-                </svg>
-              </div>
-            </div>
-            <div class="card-title-group">
-              <h3>macOS CLI Fat Binary</h3>
-              <div class="card-arch-tag">Universal 2 • Mach-O Binary (~59.3 MB)</div>
-            </div>
-            <p class="card-desc">
-              Standalone headless / command-line daemon binary containing combined x86_64 and arm64 slices. Perfect for
-              background scripting.
-            </p>
-            <a href="https://github.com/boredpolymath/truth-beacon/releases/download/v0.3.2/truth-beacon-universal"
-              class="card-btn-download" id="btn-download-mac-bin">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Download CLI Binary</span>
-            </a>
-            <div class="checksum-box">
-              <div class="checksum-content" title="c9dda263d5d58adb46fe73025947e127a5fe200b7677bcc2ecf2e5145209890e">
-                <span>SHA-256:</span>
-                <span class="checksum-hash">c9dda263...45209890e</span>
-              </div>
-              <button type="button" class="btn-copy-checksum"
-                data-hash="c9dda263d5d58adb46fe73025947e127a5fe200b7677bcc2ecf2e5145209890e"
-                title="Copy SHA-256 Checksum" id="btn-copy-mac-bin">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -710,7 +495,7 @@ shasum -a 256 TruthBeacon_0.3.2_universal.dmg
             </div>
             <h3>Windows SmartScreen Prompt</h3>
             <p>
-              When launching the installer or portable EXE, Windows SmartScreen may show an unrecognised app alert
+              When launching the installer, Windows SmartScreen may show an unrecognised app alert
               because the binary is not signed with an enterprise EV certificate. Click <strong>More info</strong>, then
               choose <strong>Run anyway</strong>. You can verify the SHA-256 hash first.
             </p>
