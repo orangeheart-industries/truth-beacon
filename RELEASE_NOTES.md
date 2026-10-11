@@ -1,3 +1,36 @@
+# TruthBeacon v0.3.2 — Authoritative Discord Moderation, Architecture Modularization & CI Pipeline Hardening
+**Bored Polymath Studios — Identity Ground-Truth & Community Stewardship**
+
+---
+
+### Overview
+TruthBeacon v0.3.2 introduces authoritative Discord REST API moderation execution for imposter "Ban & Purge" actions, preventing local status changes from masquerading as completed enforcement. This release also resolves CI supply chain and compiler linting gates (`cargo fmt` and `cargo clippy`), fully decomposes legacy monolithic JavaScript files into focused ES modules with `DOMPurify` input sanitization, and updates distribution manifests with comprehensive security headers and crawler guidance.
+
+---
+
+### What's New & Hardened in v0.3.2
+
+#### 1. Authoritative Discord REST Moderation
+- **Real Remote Ban & Prune**: Integrated real HTTP calls to Discord API endpoint `/guilds/{guild_id}/bans/{user_id}` with Bearer/Bot token authentication, enforcing `delete_message_seconds` pruning and audit log reasoning.
+- **Masquerading Status Prevention**: Local SQLite status and audit log records are only committed after authoritative HTTP 200/204 confirmation from Discord's gateway. If Discord rejects with 401 Unauthorized, 403 Forbidden, or 429 Rate Limited, the local pending state is preserved and actionable error details are returned to the operator.
+- **Dedicated Test Mocking**: Provided hermetic dependency-injected mock ban handlers for deterministic test verification across 215 Rust test suites.
+
+#### 2. CI Pipeline & Compiler Gate Remediation
+- **Rustfmt Compliance**: Resolved code formatting diffs across `src-tauri/src/commands/mod.rs` and `src-tauri/src/gateway/moderation.rs`, guaranteeing `cargo fmt -- --check` passes cleanly on all branches.
+- **Clippy Lock Gate**: Resolved `clippy::await_holding_lock` warnings across asynchronous command test suites, ensuring clean compilation under `-D warnings`.
+
+#### 3. Frontend Architecture Modularization & DOMPurify Sanitization
+- **God File Decomposition**: Refactored `ui/js/app.js` from 1,729 lines down to 180 lines by establishing modular domain components: `triage.js`, `vault.js`, `audit.js`, `discord_setup.js`, `modals.js`, `notifications.js`, and `utils.js`.
+- **Function Complexity Limits**: Decomposed complex functions across `ui/js/ipc.js` (down from 396 lines to 29 lines), `ui/js/state.js` (down from 87 lines to 42 lines), and `scripts/generate_installer_assets.py` (down from 83 lines to 25 lines).
+- **DOMPurify XSS Defense**: Vendor-neutral DOMPurify module integrated across all card and table dynamic template builders.
+
+#### 4. Web Security & Crawler Documentation
+- Added `website/robots.txt` and `website/llms.txt` with sitemap integration and AI assistant guidance.
+- Added strict HTTP response headers (`Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, and `HSTS`) in `website/_headers`.
+- Implemented `schema.org` / `SoftwareApplication` JSON-LD structured data and canonical links in `website/index.html`.
+
+---
+
 # TruthBeacon v0.3.1 — VibeDoctor Automated Audit Hardening, XSS Sanitization & Production Release
 **Bored Polymath Studios — Identity Ground-Truth & Community Stewardship**
 

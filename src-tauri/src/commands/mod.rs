@@ -499,7 +499,9 @@ pub async fn resolve_incident(
                 CommandError::AuthenticationFailed(format!("Cannot execute Discord ban: {}", msg))
             }
             crate::gateway::moderation::ModerationError::Unauthorized => {
-                CommandError::AuthenticationFailed("Discord bot token is invalid or unauthorized".into())
+                CommandError::AuthenticationFailed(
+                    "Discord bot token is invalid or unauthorized".into(),
+                )
             }
             crate::gateway::moderation::ModerationError::PermissionDenied(msg) => {
                 CommandError::ValidationFailed(format!("Discord permission denied: {}", msg))
@@ -1249,6 +1251,7 @@ pub fn get_health_diagnostics() -> Result<crate::diagnostics::HealthDiagnosticRe
 }
 
 #[cfg(test)]
+#[allow(clippy::await_holding_lock)]
 mod tests {
     use super::*;
 
@@ -1954,7 +1957,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_uncertain_impersonation_detection_safeguards_against_automated_destructive_action() {
+    async fn test_uncertain_impersonation_detection_safeguards_against_automated_destructive_action(
+    ) {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
         crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
@@ -2186,15 +2190,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resolve_incident_ban_fails_when_discord_api_rejects_preventing_status_masquerading() {
+    async fn test_resolve_incident_ban_fails_when_discord_api_rejects_preventing_status_masquerading(
+    ) {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
         let storage = crate::storage::StorageManager::default_instance().unwrap();
 
         // Mock Discord returning 403 Forbidden (Missing permissions)
         crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| {
-            Err(crate::gateway::moderation::ModerationError::PermissionDenied(
-                "Missing BAN_MEMBERS permission".to_string(),
-            ))
+            Err(
+                crate::gateway::moderation::ModerationError::PermissionDenied(
+                    "Missing BAN_MEMBERS permission".to_string(),
+                ),
+            )
         }));
 
         let bm_id = format!(
@@ -2250,9 +2257,16 @@ mod tests {
         )
         .await;
 
-        assert!(ban_res.is_err(), "Expected resolve_incident to fail when Discord rejects");
+        assert!(
+            ban_res.is_err(),
+            "Expected resolve_incident to fail when Discord rejects"
+        );
         let err_msg = format!("{:?}", ban_res.err().unwrap());
-        assert!(err_msg.contains("Discord permission denied"), "Expected permission denied error: {}", err_msg);
+        assert!(
+            err_msg.contains("Discord permission denied"),
+            "Expected permission denied error: {}",
+            err_msg
+        );
 
         // CRITICAL CHECK: Local status changes MUST NOT masquerade as completed moderation
         let fetched = storage.get_incident(&inc_id).unwrap().unwrap();
@@ -2265,20 +2279,31 @@ mod tests {
         assert_eq!(fetched.operator_id, None);
 
         // Verify NO audit log was written for this failed ban
-        let logs = storage.list_audit_logs(Some("guild_masq_check"), None).unwrap();
-        let ban_log = logs.iter().find(|l| l.incident_id.as_deref() == Some(&inc_id));
-        assert!(ban_log.is_none(), "Audit log must not record completed ban when Discord API rejected!");
+        let logs = storage
+            .list_audit_logs(Some("guild_masq_check"), None)
+            .unwrap();
+        let ban_log = logs
+            .iter()
+            .find(|l| l.incident_id.as_deref() == Some(&inc_id));
+        assert!(
+            ban_log.is_none(),
+            "Audit log must not record completed ban when Discord API rejected!"
+        );
 
         // Cleanup
         crate::gateway::moderation::set_test_mock_ban_handler(None);
         let conn_guard = storage.get_connection();
         let conn = conn_guard.lock().unwrap();
         let _ = conn.execute("DELETE FROM benchmarks WHERE id = ?1;", [&bm_id]);
-        let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_masq_check';", []);
+        let _ = conn.execute(
+            "DELETE FROM incidents WHERE guild_id = 'guild_masq_check';",
+            [],
+        );
     }
 
     #[tokio::test]
-    async fn test_resolve_incident_ban_fails_when_no_token_configured_preventing_status_masquerading() {
+    async fn test_resolve_incident_ban_fails_when_no_token_configured_preventing_status_masquerading(
+    ) {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
         let storage = crate::storage::StorageManager::default_instance().unwrap();
 
@@ -2342,7 +2367,12 @@ mod tests {
 
         assert!(ban_res.is_err());
         let err_msg = format!("{:?}", ban_res.err().unwrap());
-        assert!(err_msg.contains("Cannot execute Discord ban") || err_msg.contains("Missing or invalid bot token"), "Expected token error: {}", err_msg);
+        assert!(
+            err_msg.contains("Cannot execute Discord ban")
+                || err_msg.contains("Missing or invalid bot token"),
+            "Expected token error: {}",
+            err_msg
+        );
 
         // Verification: Local status did NOT change to Banned
         let fetched = storage.get_incident(&inc_id).unwrap().unwrap();
@@ -2356,7 +2386,10 @@ mod tests {
         let conn_guard = storage.get_connection();
         let conn = conn_guard.lock().unwrap();
         let _ = conn.execute("DELETE FROM benchmarks WHERE id = ?1;", [&bm_id]);
-        let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_unauthed_no_token';", []);
+        let _ = conn.execute(
+            "DELETE FROM incidents WHERE guild_id = 'guild_unauthed_no_token';",
+            [],
+        );
     }
 
     #[tokio::test]
@@ -2423,7 +2456,11 @@ mod tests {
         )
         .await;
 
-        assert!(ban_res.is_ok(), "Expected Ban & Purge to succeed when Discord confirms: {:?}", ban_res);
+        assert!(
+            ban_res.is_ok(),
+            "Expected Ban & Purge to succeed when Discord confirms: {:?}",
+            ban_res
+        );
 
         // Verification: Status in SQLite updated to Banned AFTER Discord confirmed
         let fetched = storage.get_incident(&inc_id).unwrap().unwrap();
@@ -2432,9 +2469,17 @@ mod tests {
         assert!(fetched.resolved_at.is_some());
 
         // Verification: Audit log entry was recorded with BanAndPurge action
-        let logs = storage.list_audit_logs(Some("guild_auth_ok"), None).unwrap();
-        let ban_log = logs.iter().find(|l| l.incident_id.as_deref() == Some(&inc_id)).unwrap();
-        assert_eq!(ban_log.action, crate::models::audit::ActionType::BanAndPurge);
+        let logs = storage
+            .list_audit_logs(Some("guild_auth_ok"), None)
+            .unwrap();
+        let ban_log = logs
+            .iter()
+            .find(|l| l.incident_id.as_deref() == Some(&inc_id))
+            .unwrap();
+        assert_eq!(
+            ban_log.action,
+            crate::models::audit::ActionType::BanAndPurge
+        );
         assert_eq!(ban_log.target_user_id.as_deref(), Some("suspect_ok_42"));
 
         // Cleanup
@@ -2442,8 +2487,14 @@ mod tests {
         let conn_guard = storage.get_connection();
         let conn = conn_guard.lock().unwrap();
         let _ = conn.execute("DELETE FROM benchmarks WHERE id = ?1;", [&bm_id]);
-        let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_auth_ok';", []);
-        let _ = conn.execute("DELETE FROM audit_logs WHERE guild_id = 'guild_auth_ok';", []);
+        let _ = conn.execute(
+            "DELETE FROM incidents WHERE guild_id = 'guild_auth_ok';",
+            [],
+        );
+        let _ = conn.execute(
+            "DELETE FROM audit_logs WHERE guild_id = 'guild_auth_ok';",
+            [],
+        );
     }
 
     #[test]

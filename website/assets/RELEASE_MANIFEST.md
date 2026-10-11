@@ -1,9 +1,9 @@
-# TruthBeacon v0.3.1 — Official Release Staging Manifest
+# TruthBeacon v0.3.2 — Official Release Staging Manifest
 **Bored Polymath Studios — Release Engineering Pipeline**
 
 ## Overview
 - **Application Name**: TruthBeacon
-- **Version**: 0.3.1
+- **Version**: 0.3.2
 - **Identifier**: `com.boredpolymath.truthbeacon`
 - **Frontend Engine**: Tauri 2 (Webkit / Cocoa WebView, zero npm blobs)
 - **Backend Architecture**: Rust 2021 (Universal 2: `x86_64` + `aarch64`)
@@ -15,6 +15,9 @@
 
 | Artifact File | Architecture | Size | SHA-256 Checksum | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| `TruthBeacon_0.3.2_universal.dmg` | Universal 2 (Intel + Apple Silicon) | ~29 MB | `199d97bd6ef59f138eb279655c9ea7b938b48647667003db3a2a4ee8ce7a993a` | Release deliverable |
+| `TruthBeacon_0.3.2_universal.app.tar.gz` | Universal 2 (Intel + Apple Silicon) | ~27 MB | `1b56ae73fb77022a46d7d054b09d8658e3be0f0fca75e0f27b466a77bd39886f` | Release deliverable |
+| `TruthBeacon_0.3.2_macos_universal.zip` | Universal 2 (Intel + Apple Silicon) | ~27 MB | `08e357d8ff60533febf8062b4f05f5c77b0c2e7be2062bf3255df351f31a9ba6` | Release deliverable |
 | `TruthBeacon_0.3.1_universal.dmg` | Universal 2 (Intel + Apple Silicon) | ~29 MB | `5249bc8cf775c99878f43340b7fb73633270d0c1ed98ed827ec17e9aeb8c5d20` | Release deliverable |
 | `TruthBeacon_0.3.1_universal.app.tar.gz` | Universal 2 (Intel + Apple Silicon) | ~27 MB | `22fcb3375a27df0f717fa6cc741b4c9e48a1633cde55bd1ef25900fae6130bbb` | Release deliverable |
 | `TruthBeacon_0.3.1_macos_universal.zip` | Universal 2 (Intel + Apple Silicon) | ~27 MB | `67d4713af9e7c2b22023e44715d42ac7a7b8dedfdda59af3ddbe32f307fd8499` | Release deliverable |
@@ -24,7 +27,7 @@
 | `TruthBeacon_0.2.2_universal.dmg` | Universal 2 (Intel + Apple Silicon) | ~29.5 MB | `c450fa110a54f2d64eab14763b8d9a7505f7bb0100c95417eca0d185c713a629` | Apple Developer ID signed drag-and-drop macOS installer |
 | `TruthBeacon_0.2.2_macos_universal.zip` | Universal 2 (Intel + Apple Silicon) | ~27.9 MB | `58101f915f97e4950a8d03ff85a32d21fb6e49d9dc7703ca0bb71e3c06375730` | Standalone portable macOS `.app` bundle archive |
 | `TruthBeacon_0.2.2_universal.app.tar.gz` | Universal 2 (Intel + Apple Silicon) | ~27.9 MB | `7bd8294fa257176482da5af1651681ab3c4fe348d996bf99832e0abbc0215ceb` | Standalone macOS auto-updater tarball archive |
-| `truth-beacon-universal` | Universal 2 (Intel + Apple Silicon) | ~59.3 MB | `c9dda263d5d58adb46fe73025947e127a5fe200b7677bcc2ecf2e5145209890e` | Standalone Mach-O fat binary |
+| `truth-beacon-universal` | Universal 2 (Intel + Apple Silicon) | ~59.3 MB | `860f535fdc8713811b0e95f3d4f49bd948fbe759bbf20222c2cd5fc4db5dd814` | Standalone Mach-O fat binary |
 | `TruthBeacon_0.2.2_x64-setup.exe` | Windows x64 (MSVC) | ~9.5 MB | `6f36a65df228544edaa36111ea7ae5eac11baa754fae81adc62956953267586e` | Windows NSIS single-executable installer |
 | `TruthBeacon_0.2.2_x64_en-US.msi` | Windows x64 (MSVC) | ~12 MB | `436d9f7be2f5776455e9fe06b111c079c703f184ce56c9bc5ee570ea3e64aaad` | Windows WiX MSI enterprise installer |
 | `TruthBeacon-Portable.exe` | Windows x64 (MSVC) | ~24 MB | `03858df78e645d9c3d38ea1ac0c146d86e8aa843f22fcba8678f59d39985a098` | Standalone portable Windows executable |
@@ -36,7 +39,7 @@
 ## Verification & Pipeline Audits
 
 1. **Unit & Integration Test Suite**:
-   - `cargo test --all-targets`: **208 passed, 0 failed, 0 ignored** (100% pass rate).
+   - `cargo test --all-targets`: **215 passed, 0 failed, 0 ignored** (100% pass rate).
 2. **Packaging Pipeline Verification**:
    - `scripts/verify_packaging_pipeline.py`: **5/5 checks passed** (DMG layout, NSIS/WiX assets, Freedesktop compliance, multi-res icons, automation scripts).
 3. **Software Bill of Materials (SBOM) & License Audit**:

@@ -46,7 +46,10 @@ pub enum ModerationError {
 pub struct BanRequestBody {
     #[serde(rename = "delete_message_seconds")]
     pub delete_message_seconds: u32,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "delete_message_days")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        rename = "delete_message_days"
+    )]
     pub delete_message_days: Option<u32>,
 }
 
@@ -97,7 +100,11 @@ impl DiscordModerationClient {
         delete_message_seconds: u32,
         reason: Option<&str>,
     ) -> Result<(), ModerationError> {
-        let clean_token = bot_token.trim().strip_prefix("Bot ").unwrap_or(bot_token).trim();
+        let clean_token = bot_token
+            .trim()
+            .strip_prefix("Bot ")
+            .unwrap_or(bot_token)
+            .trim();
         if clean_token.is_empty() {
             return Err(ModerationError::MissingToken(guild_id.to_string()));
         }
@@ -117,7 +124,10 @@ impl DiscordModerationClient {
             return Err(ModerationError::RateLimited(wait_dur.as_secs_f64()));
         }
 
-        let url = format!("{}/guilds/{}/bans/{}", self.api_base_url, clean_guild, clean_user);
+        let url = format!(
+            "{}/guilds/{}/bans/{}",
+            self.api_base_url, clean_guild, clean_user
+        );
 
         let body = BanRequestBody {
             delete_message_seconds,
@@ -190,7 +200,8 @@ impl DiscordModerationClient {
 pub type MockBanHandler = fn(&str, &str, &str) -> Result<(), ModerationError>;
 
 #[cfg(test)]
-static TEST_MOCK_BAN_HANDLER: std::sync::RwLock<Option<MockBanHandler>> = std::sync::RwLock::new(None);
+static TEST_MOCK_BAN_HANDLER: std::sync::RwLock<Option<MockBanHandler>> =
+    std::sync::RwLock::new(None);
 
 #[cfg(test)]
 pub fn set_test_mock_ban_handler(handler: Option<MockBanHandler>) {
