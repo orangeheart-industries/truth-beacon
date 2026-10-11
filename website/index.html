@@ -11,6 +11,16 @@
     content="TruthBeacon, Discord security, anti-impersonation, anti-token-theft, homoglyph detection, avatar clone detection, Tauri, Rust, download, macOS, Windows, Linux">
   <meta name="author" content="Bored Polymath Studios">
 
+  <!-- Canonical Link -->
+  <link rel="canonical" href="https://boredpolymath.github.io/truth-beacon/">
+
+  <!-- Security & Privacy Policies -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://vibedoctor.io https://boredpolymath.github.io; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://boredpolymath.github.io/truth-beacon/">
@@ -38,6 +48,31 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
 
+  <!-- Structured Data (JSON-LD / schema.org) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "TruthBeacon",
+    "operatingSystem": "macOS, Windows, Linux",
+    "applicationCategory": "SecurityApplication",
+    "description": "Zero-telemetry, memory-safe Discord anti-impersonation and threat defense engineered in Rust and Tauri 2.",
+    "url": "https://boredpolymath.github.io/truth-beacon/",
+    "downloadUrl": "https://github.com/boredpolymath/truth-beacon/releases",
+    "softwareVersion": "0.3.1",
+    "author": {
+      "@type": "Organization",
+      "name": "Bored Polymath Studios",
+      "url": "https://github.com/boredpolymath"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
   <!-- Stylesheet -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -48,8 +83,8 @@
   <header class="site-header" id="site-header">
     <div class="container nav-inner">
       <a href="#" class="nav-brand" id="nav-brand-link">
-        <img src="assets/truthbeacon_emblem.png" alt="TruthBeacon Emblem" class="brand-emblem" id="brand-emblem-img">
-        <img src="assets/truthbeacon_wordmark.png" alt="TruthBeacon" class="brand-wordmark-img" id="brand-wordmark-img">
+        <img src="assets/truthbeacon_emblem.png" alt="TruthBeacon Emblem" width="32" height="32" class="brand-emblem" id="brand-emblem-img">
+        <img src="assets/truthbeacon_wordmark.png" alt="TruthBeacon" width="128" height="22" class="brand-wordmark-img" id="brand-wordmark-img">
         <span class="brand-badge" id="nav-version-badge">v0.3.1</span>
       </a>
 
@@ -657,7 +692,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
               </svg>
               <span>Apple macOS Gatekeeper</span>
             </div>
-            <h4>Opening on macOS</h4>
+            <h3>Opening on macOS</h3>
             <p>
               macOS releases are cryptographically signed with an official Apple Developer ID Application certificate.
               If Gatekeeper requests confirmation on first launch, right-click <code>TruthBeacon.app</code>, select
@@ -673,7 +708,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
               </svg>
               <span>Microsoft Windows Defender</span>
             </div>
-            <h4>Windows SmartScreen Prompt</h4>
+            <h3>Windows SmartScreen Prompt</h3>
             <p>
               When launching the installer or portable EXE, Windows SmartScreen may show an unrecognised app alert
               because the binary is not signed with an enterprise EV certificate. Click <strong>More info</strong>, then
@@ -688,7 +723,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
               </svg>
               <span>Linux Permissions</span>
             </div>
-            <h4>Linux AppImage Execution</h4>
+            <h3>Linux AppImage Execution</h3>
             <p>
               After downloading the AppImage, grant execution permissions:
               <code>chmod +x TruthBeacon_0.3.1_amd64.AppImage</code>. On Ubuntu 22.04+, ensure <code>libfuse2</code> is
@@ -703,7 +738,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
               </svg>
               <span>Automated Code Validation</span>
             </div>
-            <h4>VibeDoctor 24/7 Security Gate</h4>
+            <h3>VibeDoctor 24/7 Security Gate</h3>
             <p style="margin-bottom: 16px;">
               TruthBeacon is registered with and continuously monitored by VibeDoctor MCP. Every release undergoes real-time AST security validation, XSS input neutralization, and memory-safe inspection.
             </p>
@@ -759,7 +794,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
             </div>
 
             <div class="showcase-preview-frame" title="Click to view full image">
-              <img src="assets/screenshot_protected.png" alt="TruthBeacon Active Protection Dashboard"
+              <img src="assets/screenshot_protected.png" alt="TruthBeacon Active Protection Dashboard" width="800" height="500"
                 class="showcase-preview-img" id="showcase-item-img">
               <span class="preview-overlay-hint">Click to enlarge</span>
             </div>
@@ -839,7 +874,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
   <div class="lightbox-modal" id="lightbox-modal">
     <div class="lightbox-content">
       <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Close modal">&times;</button>
-      <img src="" alt="Full preview" class="lightbox-img" id="lightbox-img">
+      <img src="" alt="Full preview" width="1200" height="750" class="lightbox-img" id="lightbox-img">
     </div>
   </div>
 
@@ -853,7 +888,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
         <div class="footer-brand-col">
           <div class="footer-brand-header">
             <img src="assets/truthbeacon_emblem.png" alt="TruthBeacon" width="28" height="28">
-            <img src="assets/truthbeacon_wordmark.png" alt="TruthBeacon" height="18">
+            <img src="assets/truthbeacon_wordmark.png" alt="TruthBeacon" width="105" height="18">
           </div>
           <p class="footer-desc">
             Next-Gen Discord Anti-Impersonation & Threat Defense. Built for server owners, moderators, and security
@@ -862,7 +897,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
         </div>
 
         <div class="footer-nav-col">
-          <h4>Release v0.3.1</h4>
+          <h3>Release v0.3.1</h3>
           <ul class="footer-links">
             <li><a href="https://github.com/boredpolymath/truth-beacon/releases/tag/v0.3.1" target="_blank"
                 class="footer-link">GitHub Release Notes</a></li>
@@ -876,7 +911,7 @@ shasum -a 256 TruthBeacon_0.3.1_universal.dmg
         </div>
 
         <div class="footer-nav-col">
-          <h4>Repository & Audits</h4>
+          <h3>Repository & Audits</h3>
           <ul class="footer-links">
             <li><a href="https://github.com/boredpolymath/truth-beacon" target="_blank" class="footer-link">Source Code
                 (GitHub)</a></li>

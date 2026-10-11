@@ -3,10 +3,16 @@ use serde::{Deserialize, Serialize};
 pub mod client;
 pub mod daemon;
 pub mod events;
+pub mod moderation;
 pub mod payload;
 pub mod power_assertion;
 pub mod rate_limiter;
 pub mod resilience;
+
+pub use moderation::{
+    execute_discord_ban, BanRequestBody, DiscordModerationClient, ModerationError,
+    DEFAULT_PURGE_SECONDS,
+};
 
 pub use client::{
     DiscordGatewayClient, GatewayConfig, GatewayDispatchEvent, GatewayError,

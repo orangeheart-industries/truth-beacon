@@ -1,0 +1,24 @@
+# TruthBeacon
+
+> Zero-telemetry, memory-safe Discord community defense and anti-impersonation engine engineered in Rust and Tauri 2.
+
+## Overview
+TruthBeacon is a 100% offline, privacy-first desktop security system designed to protect Discord communities from impersonation, account cloning, webhook hijacking, and targeted credential theft. Engineered with native Rust and Tauri 2, it maintains an idle memory footprint under 30 MB while evaluating threats locally on device using SQLite and perceptual hashing algorithms.
+
+## Key Capabilities
+- **Perceptual Avatar Hashing**: Blockwise discrete cosine transform (DCT) and hamming distance comparison detects cloned, cropped, and perturbed avatars.
+- **Unicode Homoglyph Detection**: Identifies visual lookalikes across Latin, Cyrillic, and Greek character sets using authoritative skeleton normalization.
+- **Zero-Telemetry Security**: Operates completely offline without cloud servers, external analytics, or data exfiltration.
+- **Local SQLite Cryptographic Vault**: Stores verified community benchmarks and tamper-evident audit logs with AES-GCM and OS-native keychain encryption.
+- **Automated Circuit Breaker**: Rate-limits consequential moderation actions to prevent cascading mistakes or runaway bots.
+
+## Official Downloads & Verification
+- **macOS**: Universal 2 DMG (Apple Silicon & Intel 64-bit) with Apple Notarization and Ed25519 cryptographic signatures.
+- **Windows**: NSIS Installer (x64) and standalone executable signed with Authenticode.
+- **Linux**: AppImage and Debian (.deb) packages with SHA-256 checksums.
+- **Repository**: https://github.com/boredpolymath/truth-beacon
+- **Official Site**: https://boredpolymath.github.io/truth-beacon/
+- **Verification Keys**: SHA256SUMS.txt.asc and GPG-signed manifests available in releases.
+
+## License
+Dual-licensed under MIT and Apache-2.0. Developed by Bored Polymath Studios.

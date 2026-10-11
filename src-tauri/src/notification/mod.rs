@@ -240,7 +240,7 @@ fn dispatch_linux_notification(payload: &NotificationPayload) -> Result<(), Noti
 /// 1. "Inspect" - Focuses and opens main console on the incident
 /// 2. "Dismiss" - Marks incident as benign/resolved with immutable audit log entry
 /// 3. "Ban & Purge" - Bans suspect from server with message pruning and audit logging
-pub fn execute_notification_action(
+pub async fn execute_notification_action(
     app: &tauri::AppHandle,
     incident_id: &str,
     action: &str,
@@ -266,6 +266,7 @@ pub fn execute_notification_action(
                 Some("NotificationToast".to_string()),
                 None,
             )
+            .await
             .map_err(|e| NotificationError::CommandError(e.to_string()))?;
 
             let _ = app.emit(
@@ -285,6 +286,7 @@ pub fn execute_notification_action(
                 Some("NotificationToast".to_string()),
                 None,
             )
+            .await
             .map_err(|e| NotificationError::CommandError(e.to_string()))?;
 
             let _ = app.emit(

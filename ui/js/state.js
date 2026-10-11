@@ -64,9 +64,9 @@ class StateStore {
     this.notify();
   }
 
-  authorizeAlternate(incidentId, targetBenchmarkId, purpose, justification) {
+  async authorizeAlternate(incidentId, targetBenchmarkId, purpose, justification) {
     const note = justification || `Approved alternate account (${purpose})`;
-    this.resolveIncident(incidentId, 'whitelist', note, {
+    return await this.resolveIncident(incidentId, 'whitelist', note, {
       targetBenchmarkId,
       purpose,
       label: purpose,
@@ -74,66 +74,65 @@ class StateStore {
     });
   }
 
-  resolveIncident(id, action, reason = "", altMetadata = null) {
-    const incIndex = this.incidents.findIndex(i => i.id === id);
-    if (incIndex === -1) return;
-
-    const incident = this.incidents[incIndex];
-    let newStatus = 'dismissed';
-    let auditAction = 'dismiss';
-    let defaultReason = 'Mark incident as resolved / benign coincidence';
-
-    if (action === 'ban') {
-      newStatus = 'banned';
-      auditAction = 'ban_and_purge';
-      defaultReason = 'Ban account from guild with message pruning and audit logging';
-    } else if (action === 'exclude') {
-      newStatus = 'excluded';
-      auditAction = 'exclude_user';
-      defaultReason = 'Quarantine / remove elevated permissions with clear reason';
-    } else if (action === 'whitelist') {
-      newStatus = 'whitelisted';
-      auditAction = 'whitelist_alternate';
-      defaultReason = 'Approved alternate account; appended to benchmark tags to prevent future alerts';
-
-      // Phase 16.3: Link alternate identity to target benchmark and append tags to prevent future alerts
-      const targetBmId = altMetadata?.targetBenchmarkId || incident.discrepancy.matched_benchmark_id;
-      if (targetBmId) {
-        const bm = this.benchmarks.find(b => b.id === targetBmId);
-        if (bm) {
-          if (!bm.authorized_alts) bm.authorized_alts = [];
-          const suspectId = incident.discrepancy.suspect_user_id;
-          bm.authorized_alts.push({
-            user_id: suspectId,
-            label: altMetadata?.label || "Authorized Secondary Account",
-            note: reason || altMetadata?.note || "Operator verified alternate identity"
-          });
-
-          if (!bm.tags) bm.tags = [];
-          const altTag = `Whitelisted Alt: ${suspectId}`;
-          if (!bm.tags.includes(altTag)) bm.tags.push(altTag);
-          if (!bm.tags.includes("Authorized Alt")) bm.tags.push("Authorized Alt");
-        }
-      }
-    } else if (action === 'dismiss') {
-      newStatus = 'dismissed';
-      auditAction = 'dismiss';
-      defaultReason = 'Mark incident as resolved / benign coincidence';
+  _resolveActionConfig(action) {
+    switch (action) {
+      case 'ban':
+        return {
+          newStatus: 'banned',
+          auditAction: 'ban_and_purge',
+          defaultReason: 'Ban account from guild with message pruning and audit logging'
+        };
+      case 'exclude':
+        return {
+          newStatus: 'excluded',
+          auditAction: 'exclude_user',
+          defaultReason: 'Quarantine / remove elevated permissions with clear reason'
+        };
+      case 'whitelist':
+        return {
+          newStatus: 'whitelisted',
+          auditAction: 'whitelist_alternate',
+          defaultReason: 'Approved alternate account; appended to benchmark tags to prevent future alerts'
+        };
+      case 'dismiss':
+      default:
+        return {
+          newStatus: 'dismissed',
+          auditAction: 'dismiss',
+          defaultReason: 'Mark incident as resolved / benign coincidence'
+        };
     }
+  }
 
-    incident.status = newStatus;
-    incident.resolved_at = Date.now();
-    incident.resolution_notes = reason || defaultReason;
+  _applyWhitelistAlt(incident, altMetadata, resolutionNotes) {
+    const targetBmId = altMetadata?.targetBenchmarkId || incident.discrepancy.matched_benchmark_id;
+    if (!targetBmId) return;
+    const bm = this.benchmarks.find(b => b.id === targetBmId);
+    if (!bm) return;
 
-    // Phase 16.4: Record immutable audit entry in local ledger
+    if (!bm.authorized_alts) bm.authorized_alts = [];
+    const suspectId = incident.discrepancy.suspect_user_id;
+    bm.authorized_alts.push({
+      user_id: suspectId,
+      label: altMetadata?.label || "Authorized Secondary Account",
+      note: resolutionNotes || altMetadata?.note || "Operator verified alternate identity"
+    });
+
+    if (!bm.tags) bm.tags = [];
+    const altTag = `Whitelisted Alt: ${suspectId}`;
+    if (!bm.tags.includes(altTag)) bm.tags.push(altTag);
+    if (!bm.tags.includes("Authorized Alt")) bm.tags.push("Authorized Alt");
+  }
+
+  _recordAuditEntry(incident, action, newStatus, altMetadata, auditAction) {
     this.auditLogs.unshift({
       id: `aud_${Date.now()}`,
       timestamp: Date.now(),
       action: auditAction,
-      guild_id: this.selectedGuild.id,
+      guild_id: this.selectedGuild?.id || incident.guild_id || "global",
       operator_id: "LocalSteward",
       target_user_id: incident.discrepancy.suspect_user_id,
-      incident_id: id,
+      incident_id: incident.id,
       reason: incident.resolution_notes,
       metadata: {
         action,
@@ -143,8 +142,9 @@ class StateStore {
         altMetadata
       }
     });
+  }
 
-    // Check circuit breaker trigger simulation
+  _updateCircuitBreaker(action) {
     if (action === 'ban' || action === 'exclude') {
       this.daemonHealth.circuit_breaker.rolling_requests += 1;
       if (this.daemonHealth.circuit_breaker.rolling_requests >= this.daemonHealth.circuit_breaker.max_requests) {
@@ -152,15 +152,50 @@ class StateStore {
         this.daemonHealth.circuit_breaker.remaining_cooldown = 60;
       }
     }
+  }
 
-    invokeCommand('resolve_incident', {
+  async resolveIncident(id, action, reason = "", altMetadata = null) {
+    const incIndex = this.incidents.findIndex(i => i.id === id);
+    if (incIndex === -1) return false;
+
+    const incident = this.incidents[incIndex];
+    if (incident.status !== 'pending') {
+      console.warn(`[TruthBeacon] Incident '${id}' is already resolved with status '${incident.status}'`);
+      return false;
+    }
+
+    const { newStatus, auditAction, defaultReason } = this._resolveActionConfig(action);
+    const resolutionNotes = reason || defaultReason;
+
+    // CRITICAL: Await authoritative backend resolution FIRST.
+    // Prevents local status changes from masquerading as completed moderation
+    // if Discord API rejects, network fails, or bot lacks permission.
+    await invokeCommand('resolve_incident', {
       incident_id: id,
       status: newStatus,
-      resolution_notes: incident.resolution_notes,
+      resolution_notes: resolutionNotes,
       operator_id: "LocalSteward",
       target_benchmark_id: altMetadata?.targetBenchmarkId || null
     });
+
+    // Only update local in-memory status AFTER successful authoritative moderation confirmation
+    incident.status = newStatus;
+    incident.resolved_at = Date.now();
+    incident.resolution_notes = resolutionNotes;
+
+    // Link alternate identity to target benchmark and append tags
+    if (action === 'whitelist') {
+      this._applyWhitelistAlt(incident, altMetadata, resolutionNotes);
+    }
+
+    // Record immutable audit entry in local ledger
+    this._recordAuditEntry(incident, action, newStatus, altMetadata, auditAction);
+
+    // Update circuit breaker
+    this._updateCircuitBreaker(action);
+
     this.notify();
+    return true;
   }
 
   resetCircuitBreaker() {

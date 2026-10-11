@@ -1,0 +1,22 @@
+# robots.txt for TruthBeacon (https://boredpolymath.github.io/truth-beacon/)
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /css/
+Allow: /js/
+
+# AI Crawlers & Scrapers Guidance
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Anthropic-AI
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://boredpolymath.github.io/truth-beacon/sitemap.xml

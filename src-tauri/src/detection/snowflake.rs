@@ -241,14 +241,12 @@ mod tests {
 
     #[test]
     fn test_parse_snowflake_str_valid_and_invalid() {
-        assert_eq!(
-            parse_snowflake_str("175928847299117063").unwrap(),
-            175928847299117063u64
-        );
-        assert_eq!(
-            parse_snowflake_str("  175928847299117063 \n").unwrap(),
-            175928847299117063u64
-        );
+        let test_sf = (41_944_705_796u64 << 22) | 187_911u64;
+        let test_str = test_sf.to_string();
+        assert_eq!(parse_snowflake_str(&test_str).unwrap(), test_sf);
+
+        let padded = format!("  {} \n", test_str);
+        assert_eq!(parse_snowflake_str(&padded).unwrap(), test_sf);
 
         assert!(matches!(
             parse_snowflake_str(""),

@@ -259,9 +259,19 @@ function initShowcaseTabs() {
         imgEl.alt = item.imgAlt;
       }
       if (pointsEl) {
-        pointsEl.innerHTML = item.points
-          .map(pt => `<li class="showcase-point"><span class="showcase-point-icon">✓</span><span>${pt}</span></li>`)
-          .join('');
+        pointsEl.replaceChildren();
+        item.points.forEach(pt => {
+          const li = document.createElement('li');
+          li.className = 'showcase-point';
+          const icon = document.createElement('span');
+          icon.className = 'showcase-point-icon';
+          icon.textContent = '✓';
+          const text = document.createElement('span');
+          text.textContent = pt;
+          li.appendChild(icon);
+          li.appendChild(text);
+          pointsEl.appendChild(li);
+        });
       }
     });
   });
@@ -276,10 +286,21 @@ function initCopyButtons() {
 
       navigator.clipboard.writeText(hash).then(() => {
         showToast('SHA-256 Checksum copied!');
-        const origSvg = btn.innerHTML;
-        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#23a55a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        const checkSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        checkSvg.setAttribute('width', '14');
+        checkSvg.setAttribute('height', '14');
+        checkSvg.setAttribute('viewBox', '0 0 24 24');
+        checkSvg.setAttribute('fill', 'none');
+        checkSvg.setAttribute('stroke', '#23a55a');
+        checkSvg.setAttribute('stroke-width', '2.5');
+        const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        polyline.setAttribute('points', '20 6 9 17 4 12');
+        checkSvg.appendChild(polyline);
+
+        const origChildren = Array.from(btn.childNodes);
+        btn.replaceChildren(checkSvg);
         setTimeout(() => {
-          btn.innerHTML = origSvg;
+          btn.replaceChildren(...origChildren);
         }, 1800);
       }).catch(err => {
         console.error('Clipboard copy failed:', err);
@@ -297,7 +318,15 @@ function showToast(message) {
     document.body.appendChild(toast);
   }
 
-  toast.innerHTML = `<span class="toast-icon">✓</span> <span>${message}</span>`;
+  toast.replaceChildren();
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'toast-icon';
+  iconSpan.textContent = '✓';
+  const textSpan = document.createElement('span');
+  textSpan.textContent = message;
+  toast.appendChild(iconSpan);
+  toast.appendChild(document.createTextNode(' '));
+  toast.appendChild(textSpan);
   toast.classList.add('show');
 
   setTimeout(() => {

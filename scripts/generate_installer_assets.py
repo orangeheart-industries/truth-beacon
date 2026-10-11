@@ -4,7 +4,10 @@ Generate Orange Heart branded installer assets for macOS DMG, Windows NSIS, and 
 Matches the exact Discord-familiar charcoal & Orange Heart stewardship aesthetic of the main application.
 """
 
-from PIL import Image, ImageDraw, ImageFont
+try:
+    from PIL import Image, ImageDraw, ImageFont  # type: ignore[import]
+except ImportError:
+    pass
 import os
 import math
 
@@ -84,87 +87,51 @@ def draw_arrow(draw, start_x, start_y, end_x, end_y, color, width=3):
 # =============================================================================
 # 1. macOS DMG Background Canvas (660 x 400)
 # =============================================================================
-def generate_dmg_background():
-    w, h = 660, 400
-    base = Image.new("RGBA", (w, h), CLR_BG_DARKEST)
-    
-    # Layer 1: Window frame & background canvas
-    canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(canvas)
-
-    # Main window interior (rounded container)
-    draw.rounded_rectangle([0, 0, w - 1, h - 1], radius=14, fill=CLR_BG_CHAT, outline=CLR_BORDER_MEDIUM, width=1)
-
-    # Header Bar (#1e1f22)
+def _draw_dmg_header(draw, canvas, w):
     header_h = 48
     draw.rounded_rectangle([0, 0, w - 1, header_h], radius=14, fill=CLR_BG_SIDEBAR)
-    # Square off bottom of header
     draw.rectangle([0, header_h - 10, w - 1, header_h], fill=CLR_BG_SIDEBAR)
     draw.line([(0, header_h), (w - 1, header_h)], fill=CLR_BORDER_SUBTLE, width=1)
 
-    # Header Brand Logo & Text (Left-aligned, clean & minimal)
     emblem_32 = get_brand_icon(28)
     canvas.paste(emblem_32, (18, 10), emblem_32)
-
     font_title = get_font(15, bold=True)
-    font_badge = get_font(10, bold=True)
-    font_body = get_font(12)
-    font_small = get_font(10)
-    font_pill = get_font(11, bold=True)
-
     draw.text((54, 15), "TruthBeacon", fill=CLR_TEXT_HEADER, font=font_title)
 
-    # -------------------------------------------------------------------------
-    # Drop Target Pods (Inspection Card Styling from TruthBeacon UI)
-    # Slot 1 Center: (180, 200) -> Pod Bounds: x0=104, y0=95, x1=256, y1=315 (W=152, H=220)
-    # Slot 2 Center: (480, 200) -> Pod Bounds: x0=404, y0=95, x1=556, y1=315 (W=152, H=220)
-    # Note: Bottom text is deliberately omitted so Finder's native icon labels
-    # ('TruthBeacon' and 'Applications') render cleanly without duplicate text.
-    # -------------------------------------------------------------------------
-    for (cx, cy, is_target) in [
-        (180, 200, False),
-        (480, 200, True)
-    ]:
-        card_w, card_h = 152, 220
-        x0 = cx - card_w // 2
-        y0 = cy - 105
-        x1 = x0 + card_w
-        y1 = y0 + card_h
 
-        # Card container with drop shadow simulation
-        shadow_box = [x0 + 2, y0 + 4, x1 - 2, y1 + 4]
-        draw.rounded_rectangle(shadow_box, radius=12, fill=(0, 0, 0, 60))
-        
-        card_border = (35, 165, 90, 160) if is_target else (88, 101, 242, 140)
-        draw.rounded_rectangle([x0, y0, x1, y1], radius=12, fill=CLR_BG_BASE, outline=card_border, width=1)
+def _draw_dmg_drop_pod(draw, cx, cy, is_target, font_badge):
+    card_w, card_h = 152, 220
+    x0 = cx - card_w // 2
+    y0 = cy - 105
+    x1 = x0 + card_w
+    y1 = y0 + card_h
 
-        # Card Top Accent Strip
-        top_strip_color = (35, 165, 90, 40) if is_target else (88, 101, 242, 40)
-        draw.rounded_rectangle([x0, y0, x1, y0 + 26], radius=12, fill=top_strip_color)
-        draw.rectangle([x0, y0 + 16, x1, y0 + 26], fill=top_strip_color)
-        draw.line([(x0, y0 + 26), (x1, y0 + 26)], fill=CLR_BORDER_SUBTLE, width=1)
+    # Card container with drop shadow simulation
+    shadow_box = [x0 + 2, y0 + 4, x1 - 2, y1 + 4]
+    draw.rounded_rectangle(shadow_box, radius=12, fill=(0, 0, 0, 60))
 
-        badge_text = "DESTINATION" if is_target else "APPLICATION"
-        badge_color = CLR_GREEN if is_target else CLR_BLURPLE
-        bbox = draw.textbbox((0, 0), badge_text, font=font_badge)
-        bw = bbox[2] - bbox[0]
-        draw.text((cx - bw // 2, y0 + 7), badge_text, fill=badge_color, font=font_badge)
+    card_border = (35, 165, 90, 160) if is_target else (88, 101, 242, 140)
+    draw.rounded_rectangle([x0, y0, x1, y1], radius=12, fill=CLR_BG_BASE, outline=card_border, width=1)
 
-        # Subtle pedestal drop ring around the 128x128 icon area
-        pedestal_radius = 54
-        draw.ellipse([cx - pedestal_radius, cy - pedestal_radius, cx + pedestal_radius, cy + pedestal_radius],
-                     outline=(255, 255, 255, 25), width=1)
-        draw.ellipse([cx - pedestal_radius + 4, cy - pedestal_radius + 4, cx + pedestal_radius - 4, cy + pedestal_radius - 4],
-                     outline=(255, 255, 255, 12), width=1)
+    top_strip_color = (35, 165, 90, 40) if is_target else (88, 101, 242, 40)
+    draw.rounded_rectangle([x0, y0, x1, y0 + 26], radius=12, fill=top_strip_color)
+    draw.rectangle([x0, y0 + 16, x1, y0 + 26], fill=top_strip_color)
+    draw.line([(x0, y0 + 26), (x1, y0 + 26)], fill=CLR_BORDER_SUBTLE, width=1)
 
-    # -------------------------------------------------------------------------
-    # Center Action Bridge (Between the pods, center x=330, y=200)
-    # Modeled directly after the Threat Metric Pillar in TruthBeacon
-    # -------------------------------------------------------------------------
-    center_x = 330
-    center_y = 195
+    badge_text = "DESTINATION" if is_target else "APPLICATION"
+    badge_color = CLR_GREEN if is_target else CLR_BLURPLE
+    bbox = draw.textbbox((0, 0), badge_text, font=font_badge)
+    bw = bbox[2] - bbox[0]
+    draw.text((cx - bw // 2, y0 + 7), badge_text, fill=badge_color, font=font_badge)
 
-    # Center connecting box / pillar
+    pedestal_radius = 54
+    draw.ellipse([cx - pedestal_radius, cy - pedestal_radius, cx + pedestal_radius, cy + pedestal_radius],
+                 outline=(255, 255, 255, 25), width=1)
+    draw.ellipse([cx - pedestal_radius + 4, cy - pedestal_radius + 4, cx + pedestal_radius - 4, cy + pedestal_radius - 4],
+                 outline=(255, 255, 255, 12), width=1)
+
+
+def _draw_dmg_center_bridge(draw, center_x, center_y, font_badge, font_small):
     pillar_w, pillar_h = 120, 100
     px0 = center_x - pillar_w // 2
     py0 = center_y - pillar_h // 2
@@ -172,7 +139,6 @@ def generate_dmg_background():
     py1 = py0 + pillar_h
     draw.rounded_rectangle([px0, py0, px1, py1], radius=10, fill=CLR_BG_SIDEBAR, outline=CLR_BORDER_SUBTLE, width=1)
 
-    # Action Pill: "DRAG TO INSTALL"
     btn_w, btn_h = 104, 26
     bx0 = center_x - btn_w // 2
     by0 = center_y - 36
@@ -184,34 +150,50 @@ def generate_dmg_background():
     btw = bbox_btn[2] - bbox_btn[0]
     draw.text((center_x - btw // 2, by0 + 7), btn_text, fill=(255, 255, 255, 255), font=font_badge)
 
-    # Directional Glowing Arrow
     arrow_y = center_y + 4
     draw_arrow(draw, center_x - 38, arrow_y, center_x + 38, arrow_y, CLR_OH_ORANGE, width=3)
 
-    # Secondary guide caption
     guide_text = "Drop into Applications"
     bbox_g = draw.textbbox((0, 0), guide_text, font=font_small)
     gw = bbox_g[2] - bbox_g[0]
     draw.text((center_x - gw // 2, center_y + 24), guide_text, fill=CLR_TEXT_SECONDARY, font=font_small)
 
-    # -------------------------------------------------------------------------
-    # Bottom Footer Strip (y: 355 to 400)
-    # -------------------------------------------------------------------------
+
+def _draw_dmg_footer(draw, w, h, font_small):
     footer_y = 355
     draw.rounded_rectangle([0, footer_y, w - 1, h - 1], radius=14, fill=CLR_BG_SIDEBAR)
     draw.rectangle([0, footer_y, w - 1, footer_y + 14], fill=CLR_BG_SIDEBAR)
     draw.line([(0, footer_y), (w - 1, footer_y)], fill=CLR_BORDER_SUBTLE, width=1)
 
-    # Footer Left
     draw.text((20, footer_y + 13), "Orange Heart Industries", fill=CLR_TEXT_PRIMARY, font=font_small)
     draw.text((150, footer_y + 13), "•", fill=CLR_TEXT_MUTED, font=font_small)
     draw.text((160, footer_y + 13), "Community Impersonation Prevention Console", fill=CLR_TEXT_SECONDARY, font=font_small)
 
-    # Footer Right Badges
     badge_right = "Zero Cloud Telemetry • Universal Binary"
     bbox_br = draw.textbbox((0, 0), badge_right, font=font_small)
     brw = bbox_br[2] - bbox_br[0]
     draw.text((w - brw - 20, footer_y + 13), badge_right, fill=CLR_TEXT_MUTED, font=font_small)
+
+
+def generate_dmg_background():
+    w, h = 660, 400
+    base = Image.new("RGBA", (w, h), CLR_BG_DARKEST)
+    
+    canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+
+    draw.rounded_rectangle([0, 0, w - 1, h - 1], radius=14, fill=CLR_BG_CHAT, outline=CLR_BORDER_MEDIUM, width=1)
+
+    _draw_dmg_header(draw, canvas, w)
+
+    font_badge = get_font(10, bold=True)
+    font_small = get_font(10)
+
+    for (cx, cy, is_target) in [(180, 200, False), (480, 200, True)]:
+        _draw_dmg_drop_pod(draw, cx, cy, is_target, font_badge)
+
+    _draw_dmg_center_bridge(draw, 330, 195, font_badge, font_small)
+    _draw_dmg_footer(draw, w, h, font_small)
 
     # Composite layers
     final_img = Image.alpha_composite(base, canvas)

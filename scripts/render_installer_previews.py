@@ -9,7 +9,10 @@ Render pixel-accurate screenshots of TruthBeacon's Installer Windows:
 
 import os
 import tempfile
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+try:
+    from PIL import Image, ImageDraw, ImageFont, ImageFilter  # type: ignore[import]
+except ImportError:
+    pass
 
 ARTIFACTS_DIR = "/Users/wardagentic/.gemini/antigravity-ide/brain/f7c1a54b-6d96-4928-9d6c-7a561a70cdf8"
 os.makedirs(ARTIFACTS_DIR, exist_ok=True)

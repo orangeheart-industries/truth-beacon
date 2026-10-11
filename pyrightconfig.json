@@ -1,0 +1,14 @@
+{
+  "include": [
+    "scripts",
+    "tests"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "src-tauri/target"
+  ],
+  "reportMissingImports": "none",
+  "pythonVersion": "3.9",
+  "pythonPlatform": "Darwin"
+}

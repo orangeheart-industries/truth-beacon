@@ -374,7 +374,7 @@ pub fn list_incidents(guild_id: String) -> Result<Vec<TriageIncident>, CommandEr
 }
 
 #[tauri::command]
-pub fn resolve_incident(
+pub async fn resolve_incident(
     incident_id: String,
     status: IncidentStatus,
     resolution_notes: Option<String>,
@@ -476,11 +476,49 @@ pub fn resolve_incident(
         }
     }
 
+    // 5. Authoritative Discord REST API Ban & Purge Execution
+    // For consequential destructive bans, Discord's actual API MUST be called and succeed
+    // BEFORE local SQLite status changes are recorded, preventing local status changes
+    // from masquerading as completed moderation when Discord rejects or fails.
+    if status == IncidentStatus::Banned {
+        let ban_reason = resolution_notes
+            .as_deref()
+            .unwrap_or("Banned and purged via TruthBeacon");
+
+        crate::gateway::moderation::execute_discord_ban(
+            &guild_id,
+            &target_user_id,
+            Some(ban_reason),
+        )
+        .await
+        .map_err(|e| match e {
+            crate::gateway::moderation::ModerationError::RateLimited(secs) => {
+                CommandError::RateLimited(secs)
+            }
+            crate::gateway::moderation::ModerationError::MissingToken(msg) => {
+                CommandError::AuthenticationFailed(format!("Cannot execute Discord ban: {}", msg))
+            }
+            crate::gateway::moderation::ModerationError::Unauthorized => {
+                CommandError::AuthenticationFailed("Discord bot token is invalid or unauthorized".into())
+            }
+            crate::gateway::moderation::ModerationError::PermissionDenied(msg) => {
+                CommandError::ValidationFailed(format!("Discord permission denied: {}", msg))
+            }
+            crate::gateway::moderation::ModerationError::NotFound { guild_id, user_id } => {
+                CommandError::ValidationFailed(format!(
+                    "Target not found on Discord (guild: {}, user: {})",
+                    guild_id, user_id
+                ))
+            }
+            other => CommandError::InternalError(format!("Discord Ban & Purge failed: {}", other)),
+        })?;
+    }
+
     let now = chrono::Utc::now().timestamp();
     let suspect_username = Some(existing.discrepancy.suspect_username.clone());
     let matched_bm_id = Some(existing.discrepancy.matched_benchmark_id.clone());
 
-    // 5. Update status in SQLite incidents table
+    // 6. Update status in SQLite incidents table (only reached if Discord ban succeeded or non-ban action)
     let _ = storage.update_incident_status(
         clean_incident_id,
         status.clone(),
@@ -1121,12 +1159,13 @@ pub fn dispatch_desktop_notification(
 }
 
 #[tauri::command]
-pub fn execute_notification_action(
+pub async fn execute_notification_action(
     app: tauri::AppHandle,
     incident_id: String,
     action: String,
 ) -> Result<bool, CommandError> {
     crate::notification::execute_notification_action(&app, &incident_id, &action)
+        .await
         .map_err(|e| CommandError::InternalError(e.to_string()))
 }
 
@@ -1257,9 +1296,9 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_resolve_incident_validation() {
-        let res = resolve_incident("".into(), IncidentStatus::Dismissed, None, None, None);
+    #[tokio::test]
+    async fn test_resolve_incident_validation() {
+        let res = resolve_incident("".into(), IncidentStatus::Dismissed, None, None, None).await;
         assert!(res.is_err());
         match res.err().unwrap() {
             CommandError::ValidationFailed(msg) => {
@@ -1269,10 +1308,11 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_resolve_incident_anti_replay_and_operator_guard() {
+    #[tokio::test]
+    async fn test_resolve_incident_anti_replay_and_operator_guard() {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
+        crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
         let bm_id = format!(
             "bm_guard_{}",
@@ -1324,7 +1364,8 @@ mod tests {
             Some("Ban attempt without operator".into()),
             None,
             None,
-        );
+        )
+        .await;
         assert!(res_no_op.is_err());
         match res_no_op.err().unwrap() {
             CommandError::ValidationFailed(msg) => {
@@ -1340,7 +1381,8 @@ mod tests {
             Some("Authoritative ban executed".into()),
             Some("SeniorMod".into()),
             None,
-        );
+        )
+        .await;
         assert!(res_ok.is_ok());
 
         // 3. Anti-Replay Guard: Replaying or resolving again must be rejected
@@ -1350,7 +1392,8 @@ mod tests {
             Some("Attempting to re-resolve".into()),
             Some("SeniorMod".into()),
             None,
-        );
+        )
+        .await;
         assert!(res_replay.is_err());
         match res_replay.err().unwrap() {
             CommandError::ValidationFailed(msg) => {
@@ -1366,7 +1409,8 @@ mod tests {
             None,
             Some("SeniorMod".into()),
             None,
-        );
+        )
+        .await;
         assert!(res_missing.is_err());
         match res_missing.err().unwrap() {
             CommandError::IncidentNotFound(id) => {
@@ -1383,12 +1427,14 @@ mod tests {
             let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_guard';", []);
             let _ = conn.execute("DELETE FROM audit_logs WHERE guild_id = 'guild_guard';", []);
         }
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
     }
 
-    #[test]
-    fn test_phase_16_administrative_mitigation_actions_and_audit_logging() {
+    #[tokio::test]
+    async fn test_phase_16_administrative_mitigation_actions_and_audit_logging() {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
+        crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
 
         // 1. Seed canonical benchmark
@@ -1444,7 +1490,8 @@ mod tests {
             Some("Verified secondary device for audio team".into()),
             Some("LeadMod".into()),
             Some(bm_id.clone()),
-        );
+        )
+        .await;
         assert!(allow_res.is_ok(), "Allow Known Alt must succeed");
 
         // Verify status updated to Whitelisted
@@ -1498,7 +1545,8 @@ mod tests {
             Some("Quarantined suspicious account".into()),
             Some("StaffElder".into()),
             None,
-        );
+        )
+        .await;
         assert!(restrict_res.is_ok(), "Restrict Account must succeed");
         let restrict_inc = storage.get_incident(&inc_restrict_id).unwrap().unwrap();
         assert_eq!(restrict_inc.status, IncidentStatus::Excluded);
@@ -1520,7 +1568,8 @@ mod tests {
             Some("Malicious DM phishing imposter banned".into()),
             Some("LeadMod".into()),
             None,
-        );
+        )
+        .await;
         assert!(ban_res.is_ok(), "Ban Imposter must succeed");
         let ban_inc = storage.get_incident(&inc_ban_id).unwrap().unwrap();
         assert_eq!(ban_inc.status, IncidentStatus::Banned);
@@ -1542,7 +1591,8 @@ mod tests {
             Some("Benign coincidental name similarity".into()),
             Some("Steward".into()),
             None,
-        );
+        )
+        .await;
         assert!(dismiss_res.is_ok(), "Ignore Alert (Safe) must succeed");
         let dismiss_inc = storage.get_incident(&inc_dismiss_id).unwrap().unwrap();
         assert_eq!(dismiss_inc.status, IncidentStatus::Dismissed);
@@ -1555,6 +1605,7 @@ mod tests {
             let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_test';", []);
             let _ = conn.execute("DELETE FROM audit_logs WHERE guild_id = 'guild_test';", []);
         }
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
     }
 
     #[tokio::test]
@@ -1902,10 +1953,11 @@ mod tests {
         let _ = delete_benchmark(gid, bm.id);
     }
 
-    #[test]
-    fn test_uncertain_impersonation_detection_safeguards_against_automated_destructive_action() {
+    #[tokio::test]
+    async fn test_uncertain_impersonation_detection_safeguards_against_automated_destructive_action() {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
+        crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
         let bm_id = format!(
             "bm_safe_{}",
@@ -1957,7 +2009,8 @@ mod tests {
             Some("Toast Ban Click".into()),
             Some("NotificationToast".into()),
             None,
-        );
+        )
+        .await;
         assert!(
             matches!(auto_toast_res, Err(CommandError::ValidationFailed(ref msg)) if msg.contains("Uncertain impersonation detections")),
             "Automated toast must be blocked from banning uncertain incidents: {:?}",
@@ -1971,7 +2024,8 @@ mod tests {
             Some("bad".into()),
             Some("OperatorAlice".into()),
             None,
-        );
+        )
+        .await;
         assert!(
             matches!(brief_notes_res, Err(CommandError::ValidationFailed(ref msg)) if msg.contains("at least 10 characters")),
             "Manual destructive action on uncertain detection without detailed justification must fail: {:?}",
@@ -1985,7 +2039,8 @@ mod tests {
             Some("Manual operator investigation verified phishing attack in DM logs".into()),
             Some("OperatorAlice".into()),
             None,
-        );
+        )
+        .await;
         assert!(
             valid_manual_res.is_ok(),
             "Manual destructive action with proper justification must succeed"
@@ -2005,11 +2060,13 @@ mod tests {
                 [],
             );
         }
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
     }
 
-    #[test]
-    fn test_circuit_breaker_blocks_automated_toast_mitigation_when_tripped() {
+    #[tokio::test]
+    async fn test_circuit_breaker_blocks_automated_toast_mitigation_when_tripped() {
         let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
         let breaker = crate::circuit_breaker::get_global_circuit_breaker();
         breaker.reset();
@@ -2066,7 +2123,8 @@ mod tests {
                 Some("Automated Toast Mitigation".into()),
                 Some("NotificationToast".into()),
                 None,
-            );
+            )
+            .await;
         }
 
         // The 6th automated toast attempt must trip the circuit breaker and be rejected
@@ -2105,7 +2163,8 @@ mod tests {
             Some("Automated Toast Mitigation 6".into()),
             Some("NotificationToast".into()),
             None,
-        );
+        )
+        .await;
         assert!(
             matches!(trip_res, Err(CommandError::CircuitBreakerTripped)),
             "6th action must trip circuit breaker: {:?}",
@@ -2123,6 +2182,268 @@ mod tests {
             let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_cb';", []);
             let _ = conn.execute("DELETE FROM audit_logs WHERE guild_id = 'guild_cb';", []);
         }
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
+    }
+
+    #[tokio::test]
+    async fn test_resolve_incident_ban_fails_when_discord_api_rejects_preventing_status_masquerading() {
+        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let storage = crate::storage::StorageManager::default_instance().unwrap();
+
+        // Mock Discord returning 403 Forbidden (Missing permissions)
+        crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| {
+            Err(crate::gateway::moderation::ModerationError::PermissionDenied(
+                "Missing BAN_MEMBERS permission".to_string(),
+            ))
+        }));
+
+        let bm_id = format!(
+            "bm_masq_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        );
+        {
+            let conn_guard = storage.get_connection();
+            let conn = conn_guard.lock().unwrap();
+            conn.execute(
+                "INSERT INTO benchmarks (id, guild_id, user_id, canonical_username, community_role, created_at, updated_at, tags)
+                 VALUES (?1, 'guild_masq_check', '111222333', 'OriginalLeader', 'Staff', 1000, 1000, '[]');",
+                [&bm_id],
+            ).unwrap();
+        }
+
+        let inc_id = format!(
+            "inc_masq_test_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        );
+        let inc = TriageIncident {
+            id: inc_id.clone(),
+            guild_id: "guild_masq_check".into(),
+            timestamp: chrono::Utc::now().timestamp(),
+            discrepancy: crate::models::incident::IdentityDiscrepancy {
+                suspect_user_id: "suspect_bad_actor_99".into(),
+                suspect_username: "PhishingCloner".into(),
+                suspect_nickname: None,
+                suspect_avatar_url: None,
+                suspect_account_age_hours: 1,
+                matched_benchmark_id: bm_id.clone(),
+                matched_benchmark_name: "OriginalLeader".into(),
+                string_similarity_score: 0.99,
+                homoglyph_detected: true,
+                normalized_diff: "Homoglyph".into(),
+                avatar_hamming_distance: None,
+                risk_tier: crate::models::incident::RiskTier::Critical,
+            },
+            status: IncidentStatus::Pending,
+            resolution_notes: None,
+            operator_id: None,
+            resolved_at: None,
+        };
+        storage.record_incident(&inc).unwrap();
+
+        // Executing Ban & Purge when Discord rejects must fail
+        let ban_res = resolve_incident(
+            inc_id.clone(),
+            IncidentStatus::Banned,
+            Some("Phishing imposter ban".into()),
+            Some("SecurityLead".into()),
+            None,
+        )
+        .await;
+
+        assert!(ban_res.is_err(), "Expected resolve_incident to fail when Discord rejects");
+        let err_msg = format!("{:?}", ban_res.err().unwrap());
+        assert!(err_msg.contains("Discord permission denied"), "Expected permission denied error: {}", err_msg);
+
+        // CRITICAL CHECK: Local status changes MUST NOT masquerade as completed moderation
+        let fetched = storage.get_incident(&inc_id).unwrap().unwrap();
+        assert_eq!(
+            fetched.status,
+            IncidentStatus::Pending,
+            "Incident status in database must remain Pending when Discord ban fails!"
+        );
+        assert_eq!(fetched.resolved_at, None);
+        assert_eq!(fetched.operator_id, None);
+
+        // Verify NO audit log was written for this failed ban
+        let logs = storage.list_audit_logs(Some("guild_masq_check"), None).unwrap();
+        let ban_log = logs.iter().find(|l| l.incident_id.as_deref() == Some(&inc_id));
+        assert!(ban_log.is_none(), "Audit log must not record completed ban when Discord API rejected!");
+
+        // Cleanup
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
+        let conn_guard = storage.get_connection();
+        let conn = conn_guard.lock().unwrap();
+        let _ = conn.execute("DELETE FROM benchmarks WHERE id = ?1;", [&bm_id]);
+        let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_masq_check';", []);
+    }
+
+    #[tokio::test]
+    async fn test_resolve_incident_ban_fails_when_no_token_configured_preventing_status_masquerading() {
+        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let storage = crate::storage::StorageManager::default_instance().unwrap();
+
+        // Ensure no mock handler is active so real CredentialManager check executes
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
+        // Purge any residual tokens to ensure this test guild has no token
+        let _ = crate::credentials::CredentialManager::delete_token("guild_unauthed_no_token");
+
+        let bm_id = format!(
+            "bm_notoken_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        );
+        {
+            let conn_guard = storage.get_connection();
+            let conn = conn_guard.lock().unwrap();
+            conn.execute(
+                "INSERT INTO benchmarks (id, guild_id, user_id, canonical_username, community_role, created_at, updated_at, tags)
+                 VALUES (?1, 'guild_unauthed_no_token', '111222333', 'OriginalLeader', 'Staff', 1000, 1000, '[]');",
+                [&bm_id],
+            ).unwrap();
+        }
+
+        let inc_id = format!(
+            "inc_notoken_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        );
+        let inc = TriageIncident {
+            id: inc_id.clone(),
+            guild_id: "guild_unauthed_no_token".into(),
+            timestamp: chrono::Utc::now().timestamp(),
+            discrepancy: crate::models::incident::IdentityDiscrepancy {
+                suspect_user_id: "suspect_unauthed_77".into(),
+                suspect_username: "UnauthedSuspect".into(),
+                suspect_nickname: None,
+                suspect_avatar_url: None,
+                suspect_account_age_hours: 1,
+                matched_benchmark_id: bm_id.clone(),
+                matched_benchmark_name: "OriginalLeader".into(),
+                string_similarity_score: 0.99,
+                homoglyph_detected: true,
+                normalized_diff: "Homoglyph".into(),
+                avatar_hamming_distance: None,
+                risk_tier: crate::models::incident::RiskTier::Critical,
+            },
+            status: IncidentStatus::Pending,
+            resolution_notes: None,
+            operator_id: None,
+            resolved_at: None,
+        };
+        storage.record_incident(&inc).unwrap();
+
+        // Ban attempt with missing bot credentials must fail
+        let ban_res = resolve_incident(
+            inc_id.clone(),
+            IncidentStatus::Banned,
+            Some("Ban without token".into()),
+            Some("OperatorBob".into()),
+            None,
+        )
+        .await;
+
+        assert!(ban_res.is_err());
+        let err_msg = format!("{:?}", ban_res.err().unwrap());
+        assert!(err_msg.contains("Cannot execute Discord ban") || err_msg.contains("Missing or invalid bot token"), "Expected token error: {}", err_msg);
+
+        // Verification: Local status did NOT change to Banned
+        let fetched = storage.get_incident(&inc_id).unwrap().unwrap();
+        assert_eq!(
+            fetched.status,
+            IncidentStatus::Pending,
+            "Incident status in database must remain Pending when bot token is absent!"
+        );
+
+        // Cleanup
+        let conn_guard = storage.get_connection();
+        let conn = conn_guard.lock().unwrap();
+        let _ = conn.execute("DELETE FROM benchmarks WHERE id = ?1;", [&bm_id]);
+        let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_unauthed_no_token';", []);
+    }
+
+    #[tokio::test]
+    async fn test_resolve_incident_ban_succeeds_only_after_discord_confirms() {
+        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let storage = crate::storage::StorageManager::default_instance().unwrap();
+
+        let bm_id = format!(
+            "bm_ok_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        );
+        {
+            let conn_guard = storage.get_connection();
+            let conn = conn_guard.lock().unwrap();
+            conn.execute(
+                "INSERT INTO benchmarks (id, guild_id, user_id, canonical_username, community_role, created_at, updated_at, tags)
+                 VALUES (?1, 'guild_auth_ok', '111222333', 'OriginalLeader', 'Staff', 1000, 1000, '[]');",
+                [&bm_id],
+            ).unwrap();
+        }
+
+        // Mock Discord returning successful 204 No Content
+        crate::gateway::moderation::set_test_mock_ban_handler(Some(|gid, uid, _reason| {
+            assert_eq!(gid, "guild_auth_ok");
+            assert_eq!(uid, "suspect_ok_42");
+            Ok(())
+        }));
+
+        let inc_id = format!(
+            "inc_ok_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        );
+        let inc = TriageIncident {
+            id: inc_id.clone(),
+            guild_id: "guild_auth_ok".into(),
+            timestamp: chrono::Utc::now().timestamp(),
+            discrepancy: crate::models::incident::IdentityDiscrepancy {
+                suspect_user_id: "suspect_ok_42".into(),
+                suspect_username: "PhishingClonerConfirmed".into(),
+                suspect_nickname: None,
+                suspect_avatar_url: None,
+                suspect_account_age_hours: 1,
+                matched_benchmark_id: bm_id.clone(),
+                matched_benchmark_name: "OriginalLeader".into(),
+                string_similarity_score: 0.99,
+                homoglyph_detected: true,
+                normalized_diff: "Homoglyph".into(),
+                avatar_hamming_distance: None,
+                risk_tier: crate::models::incident::RiskTier::Critical,
+            },
+            status: IncidentStatus::Pending,
+            resolution_notes: None,
+            operator_id: None,
+            resolved_at: None,
+        };
+        storage.record_incident(&inc).unwrap();
+
+        let ban_res = resolve_incident(
+            inc_id.clone(),
+            IncidentStatus::Banned,
+            Some("Confirmed imposter ban by senior operator".into()),
+            Some("SeniorLead".into()),
+            None,
+        )
+        .await;
+
+        assert!(ban_res.is_ok(), "Expected Ban & Purge to succeed when Discord confirms: {:?}", ban_res);
+
+        // Verification: Status in SQLite updated to Banned AFTER Discord confirmed
+        let fetched = storage.get_incident(&inc_id).unwrap().unwrap();
+        assert_eq!(fetched.status, IncidentStatus::Banned);
+        assert_eq!(fetched.operator_id.as_deref(), Some("SeniorLead"));
+        assert!(fetched.resolved_at.is_some());
+
+        // Verification: Audit log entry was recorded with BanAndPurge action
+        let logs = storage.list_audit_logs(Some("guild_auth_ok"), None).unwrap();
+        let ban_log = logs.iter().find(|l| l.incident_id.as_deref() == Some(&inc_id)).unwrap();
+        assert_eq!(ban_log.action, crate::models::audit::ActionType::BanAndPurge);
+        assert_eq!(ban_log.target_user_id.as_deref(), Some("suspect_ok_42"));
+
+        // Cleanup
+        crate::gateway::moderation::set_test_mock_ban_handler(None);
+        let conn_guard = storage.get_connection();
+        let conn = conn_guard.lock().unwrap();
+        let _ = conn.execute("DELETE FROM benchmarks WHERE id = ?1;", [&bm_id]);
+        let _ = conn.execute("DELETE FROM incidents WHERE guild_id = 'guild_auth_ok';", []);
+        let _ = conn.execute("DELETE FROM audit_logs WHERE guild_id = 'guild_auth_ok';", []);
     }
 
     #[test]
