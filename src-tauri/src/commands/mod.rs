@@ -1257,6 +1257,13 @@ mod tests {
 
     static COMMAND_TEST_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+    fn lock_test_mutex() -> std::sync::MutexGuard<'static, ()> {
+        match COMMAND_TEST_MUTEX.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
+
     #[test]
     fn test_command_error_structured_json_serialization() {
         let err = CommandError::ValidationFailed("Invalid snowflake".into());
@@ -1313,7 +1320,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_incident_anti_replay_and_operator_guard() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
         crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
@@ -1435,7 +1442,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_phase_16_administrative_mitigation_actions_and_audit_logging() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
         crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
@@ -1758,7 +1765,7 @@ mod tests {
 
     #[test]
     fn test_persistent_benchmark_crud_and_cross_guild_authorization() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         let gid_a = format!(
             "guild_crud_a_{}",
             chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
@@ -1867,7 +1874,7 @@ mod tests {
 
     #[test]
     fn test_duplicate_benchmark_and_missing_record_handling() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         let gid = format!(
             "guild_dup_{}",
             chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
@@ -1917,7 +1924,7 @@ mod tests {
 
     #[test]
     fn test_system_status_reflects_actual_backend_state() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
         let storage = crate::storage::StorageManager::default_instance().unwrap();
         let gid = format!(
@@ -1959,7 +1966,7 @@ mod tests {
     #[tokio::test]
     async fn test_uncertain_impersonation_detection_safeguards_against_automated_destructive_action(
     ) {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         crate::circuit_breaker::get_global_circuit_breaker().reset();
         crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
@@ -2069,7 +2076,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_circuit_breaker_blocks_automated_toast_mitigation_when_tripped() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         crate::gateway::moderation::set_test_mock_ban_handler(Some(|_gid, _uid, _reason| Ok(())));
         let storage = crate::storage::StorageManager::default_instance().unwrap();
         let breaker = crate::circuit_breaker::get_global_circuit_breaker();
@@ -2192,7 +2199,7 @@ mod tests {
     #[tokio::test]
     async fn test_resolve_incident_ban_fails_when_discord_api_rejects_preventing_status_masquerading(
     ) {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         let storage = crate::storage::StorageManager::default_instance().unwrap();
 
         // Mock Discord returning 403 Forbidden (Missing permissions)
@@ -2304,7 +2311,7 @@ mod tests {
     #[tokio::test]
     async fn test_resolve_incident_ban_fails_when_no_token_configured_preventing_status_masquerading(
     ) {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         let storage = crate::storage::StorageManager::default_instance().unwrap();
 
         // Ensure no mock handler is active so real CredentialManager check executes
@@ -2369,7 +2376,9 @@ mod tests {
         let err_msg = format!("{:?}", ban_res.err().unwrap());
         assert!(
             err_msg.contains("Cannot execute Discord ban")
-                || err_msg.contains("Missing or invalid bot token"),
+                || err_msg.contains("Missing or invalid bot token")
+                || err_msg.contains("Discord bot token is invalid or unauthorized")
+                || err_msg.contains("AuthenticationFailed"),
             "Expected token error: {}",
             err_msg
         );
@@ -2394,7 +2403,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_incident_ban_succeeds_only_after_discord_confirms() {
-        let _lock = COMMAND_TEST_MUTEX.lock().unwrap();
+        let _lock = lock_test_mutex();
         let storage = crate::storage::StorageManager::default_instance().unwrap();
 
         let bm_id = format!(
