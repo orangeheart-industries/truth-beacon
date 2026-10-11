@@ -34,7 +34,12 @@ function cleanNode(node) {
       const attrName = attr.name.toLowerCase();
       const attrVal = attr.value.trim().toLowerCase();
 
-      if (attrName.startsWith('on') || attrVal.startsWith('javascript:') || attrVal.startsWith('data:text/html')) {
+      if (
+        attrName.startsWith('on') ||
+        attrVal.startsWith('javascript:') ||
+        attrVal.startsWith('data:') ||
+        attrVal.startsWith('vbscript:')
+      ) {
         node.removeAttribute(attr.name);
         continue;
       }
